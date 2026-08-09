@@ -1,6 +1,6 @@
 // 本地状态存储：用浏览器 localStorage 把数据存在用户自己设备上，无需后端服务器
 const PREFIX = 'shiguang_';
-const KEYS = { profile: 'profile', today: 'today', pantry: 'pantry', history: 'history', llm: 'llm', userRecipes: 'userRecipes' };
+const KEYS = { profile: 'profile', today: 'today', pantry: 'pantry', history: 'history', llm: 'llm', userRecipes: 'userRecipes', deleted: 'deletedRecipes' };
 
 function read(key, fallback) {
   try { const v = localStorage.getItem(PREFIX + key); return v ? JSON.parse(v) : fallback; }
@@ -43,6 +43,15 @@ export const store = {
   setUserRecipes(arr) { write(KEYS.userRecipes, arr); },
   addUserRecipe(r) { const a = read(KEYS.userRecipes, []); a.push(r); write(KEYS.userRecipes, a); },
   delUserRecipe(id) { write(KEYS.userRecipes, read(KEYS.userRecipes, []).filter((r) => r.id !== id)); },
+  // 已隐藏的系统菜谱（隐藏后从菜谱库/推荐中消失，可在「我的」恢复）
+  getDeletedIds() { return read(KEYS.deleted, []); },
+  addDeletedId(id) { const a = read(KEYS.deleted, []); if (!a.includes(id)) a.push(id); write(KEYS.deleted, a); },
+  removeDeletedId(id) { write(KEYS.deleted, read(KEYS.deleted, []).filter((x) => x !== id)); },
+  // 统一删除：用户菜(id 以 u 开头)永久删；系统菜隐藏(可恢复)
+  deleteRecipe(id) {
+    if (String(id).startsWith('u')) this.delUserRecipe(id);
+    else this.addDeletedId(id);
+  },
 };
 
 // 今天日期字符串，用作每日计划的稳定种子

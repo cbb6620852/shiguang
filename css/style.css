@@ -152,7 +152,7 @@ h1 { font-size: 22px; margin: 2px 0 4px; }
 .modal textarea { width: 100%; margin-top: 4px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; color: var(--text); background: #fff; font-family: inherit; box-sizing: border-box; resize: vertical; }
 .row2 { display: flex; gap: 10px; }
 .row2 .field { flex: 1; }
-.mini.del { color: #c0392b; border-color: #e6b3ab; }
+.mini.del { color: #c0392b; border-color: #e6b3ab; padding: 6px 12px; margin-top: 4px; }
 
 /* 孕期模式 */
 .chk-inline { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); }

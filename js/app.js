@@ -59,6 +59,21 @@ function ensureToday() {
 }
 
 // ---------------- 视图 ----------------
+// 删除某道菜后，从今日菜单各时段里移除其引用，避免营养/购物/做菜页出现孤立条目
+function cleanupTodayMenu(id) {
+  if (!state.today) return;
+  let changed = false;
+  for (const slot of ['breakfast', 'lunch', 'dinner', 'snack']) {
+    if (Array.isArray(state.today[slot])) {
+      const before = state.today[slot].length;
+      state.today[slot] = state.today[slot].filter((x) => x !== id);
+      if (state.today[slot].length !== before) changed = true;
+    }
+  }
+  if (state.cook === id) { state.cook = null; state.cookStep = 0; stopTimer(); }
+  if (changed) store.setToday(state.today);
+}
+
 function viewToday() {
   ensureToday();
   const t = state.today;
@@ -139,14 +154,13 @@ function viewRecipes() {
   for (const d of all) {
     const hay = (d.name + ' ' + d.ingredients.map((i) => i.name).join(' ') + ' ' + d.tags.join(' ')).toLowerCase();
     const hidden = !((state.recipeCat === '全部' || d.category === state.recipeCat) && (!q || hay.includes(q)));
-    const isUser = String(d.id).startsWith('u');
     html += `<div class="card recipe-card ${hidden ? 'hide' : ''}" data-hay="${esc(hay)}" data-cat="${esc(d.category)}">
       <div class="card-h"><span class="dish-name">${esc(d.name)}</span>${videoBadge(d)}<span class="badge cat-${catClass(d.category)}">${esc(d.category)}</span></div>
       <div class="dish-meta">⏱${d.time}分 · 🔥${d.calories}kcal · 难度${'★'.repeat(d.difficulty)}</div>
       <div class="tags">${d.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
       ${pregBadge(d)}
       ${addRow(d)}
-      ${isUser ? `<button class="mini del" data-action="r-del" data-id="${d.id}">删</button>` : ''}</div>`;
+      <button class="mini del" data-action="r-del" data-id="${d.id}">删除</button></div>`;
   }
   html += `</div><button class="fab" data-action="new-recipe">＋ 新建菜谱</button></div>`;
   return html;
@@ -279,6 +293,7 @@ function viewMe() {
   const p = store.getProfile();
   const pantry = store.getPantry();
   const llm = store.getLlm();
+  const delList = store.getDeletedIds().map(getRecipeById).filter(Boolean);
   const tasteOpts = ['微辣', '中辣', '清淡', '酸甜', '咸鲜'];
   const tastesHtml = tasteOpts.map((t) => `<label class="chk"><input type="checkbox" class="taste" value="${t}" ${p.tastes.includes(t) ? 'checked' : ''}> ${t}</label>`).join('');
   const goalOpts = ['maintain', 'lose', 'gain'].map((g) => `<option value="${g}" ${p.goal === g ? 'selected' : ''}>${goalLabel(g)}</option>`).join('');
@@ -317,6 +332,10 @@ function viewMe() {
       <label class="field">模型 <input id="f-llm-model" value="${esc(llm.model || 'gpt-3.5-turbo')}"></label>
       <button class="btn" data-action="save-llm">保存大模型配置</button>
       <button class="btn ghost" data-action="llm-suggest">✨ 让 AI 给今日建议</button>
+    </div>
+    <div class="card">
+      <div class="slot-h">🗂️ 已隐藏菜谱（${delList.length}）</div>
+      ${delList.length ? `<div class="chips">${delList.map((d) => `<span class="chip">${esc(d.name)} <b data-action="r-restore" data-id="${d.id}">恢复</b></span>`).join('')}</div>` : '<span class="muted">暂无隐藏菜谱。在「菜谱库」卡片点「删除」可隐藏不用的菜。</span>'}
     </div>
   </div>`;
   return html;
@@ -592,7 +611,18 @@ function onClick(e) {
       break;
     }
     case 'r-cat': state.recipeCat = cat; render(); break;
-    case 'r-del': if (confirm('删除这道自制菜谱？')) { store.delUserRecipe(id); render(); } break;
+    case 'r-del': {
+      const d = getRecipeById(id);
+      const isUser = String(id).startsWith('u');
+      const msg = isUser ? '删除这道自制菜谱？此操作不可恢复。' : '隐藏这道系统菜谱？可在「我的 - 已隐藏菜谱」中恢复。';
+      if (d && confirm(msg)) {
+        store.deleteRecipe(id);
+        cleanupTodayMenu(id);
+        render();
+      }
+      break;
+    }
+    case 'r-restore': store.removeDeletedId(id); render(); break;
     case 'new-recipe': openRecipeModal(); break;
     case 'r-tab': switchRtab(btn.dataset.mode); break;
     case 'r-parse': {

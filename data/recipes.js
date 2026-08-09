@@ -11,9 +11,12 @@ import { store } from '../js/store.js';
 
 export const CATEGORIES = ['荤菜', '蔬菜', '凉拌', '主食', '汤类'];
 
-// 统一菜谱列表：内置菜谱 + 用户在"菜谱"页手动添加的菜（localStorage 持久化）
+// 统一菜谱列表：内置菜谱(已隐藏的除外) + 用户在"菜谱"页手动添加的菜（localStorage 持久化）
 export function allRecipes() {
-  try { return RECIPES.concat(store.getUserRecipes()); }
+  try {
+    const del = new Set(store.getDeletedIds());
+    return RECIPES.filter((r) => !del.has(r.id)).concat(store.getUserRecipes());
+  }
   catch (e) { return RECIPES; }
 }
 
@@ -2000,5 +2003,6 @@ export const RECIPES = [
 ];
 
 export function getRecipeById(id) {
-  return allRecipes().find((r) => r.id === id) || null;
+  try { return RECIPES.concat(store.getUserRecipes()).find((r) => r.id === id) || null; }
+  catch (e) { return null; }
 }
