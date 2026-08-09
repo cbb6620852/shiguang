@@ -20,7 +20,8 @@ const TABS = [
   { key: 'me', label: '我的', icon: '⚙️' },
 ];
 
-const state = { tab: 'today', today: null, cook: null, cookStep: 0, orderCat: CATEGORIES[0], suggest: '', timer: null, search: '', recipeCat: '全部' };
+const state = { tab: 'today', today: null, cook: null, cookStep: 0, orderCat: CATEGORIES[0], suggest: '', timer: null, search: '', recipeCat: '全部', orderSel: {} };
+const SLOT_LBL = { breakfast: '早', lunch: '午', dinner: '晚', snack: '加餐' };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const catClass = (c) => ({ 荤菜: 'meat', 蔬菜: 'veg', 凉拌: 'cold', 主食: 'staple', 汤类: 'soup' }[c] || 'veg');
@@ -36,6 +37,16 @@ function pregBadge(d) {
 }
 const goalLabel = (g) => ({ maintain: '保持', lose: '减脂', gain: '增肌' }[g] || '保持');
 const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+// 轻量 toast 提示（追加到 body，不受视图重渲染影响）
+function toast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+}
 
 function ensureToday() {
   const key = todayKey();
@@ -84,12 +95,12 @@ function viewToday() {
   }
   html += `<div class="actions"><button class="btn primary" data-action="regen">🔄 重新生成今日</button></div>`;
   if (state.suggest) html += `<div class="suggest">💡 ${esc(state.suggest)}</div>`;
-  html += `<p class="hint">想换菜？去"点菜"按 早/午/晚/加 加入，或在上方 ✕ 移除。</p></div>`;
+  html += `<p class="hint">想换菜？去"点菜"先点 早/午/晚/加餐 选中时段，再点「➕加」加入，或在上方 ✕ 移除。</p></div>`;
   return html;
 }
 
 function viewOrder() {
-  let html = `<div class="page"><h1>点菜</h1><p class="sub">按类别浏览，点 早/午/晚/加 加入今日菜单</p><div class="cat-tabs">`;
+  let html = `<div class="page"><h1>点菜</h1><p class="sub">先点 早/午/晚/加餐 选中时段（按钮变色），再点「➕加」加入今日菜单</p><div class="cat-tabs">`;
   for (const c of CATEGORIES) {
     html += `<button class="cat-tab ${c === state.orderCat ? 'active' : ''}" data-action="cat" data-cat="${esc(c)}">${esc(c)}</button>`;
   }
@@ -99,12 +110,7 @@ function viewOrder() {
       <div class="card-h"><span class="dish-name">${esc(d.name)}</span>${videoBadge(d)}<span class="badge cat-${catClass(d.category)}">${esc(d.category)}</span></div>
       <div class="dish-meta">⏱${d.time}分 · 🔥${d.calories}kcal · 难度${'★'.repeat(d.difficulty)}</div>
       <div class="tags">${d.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-      <div class="add-row">
-        <button class="mini" data-action="add" data-id="${d.id}" data-slot="breakfast">早</button>
-        <button class="mini" data-action="add" data-id="${d.id}" data-slot="lunch">午</button>
-        <button class="mini" data-action="add" data-id="${d.id}" data-slot="dinner">晚</button>
-        <button class="mini" data-action="add" data-id="${d.id}" data-slot="snack">加</button>
-      </div></div>`;
+      ${addRow(d)}</div>`;
   }
   html += `</div></div>`;
   return html;
@@ -139,13 +145,8 @@ function viewRecipes() {
       <div class="dish-meta">⏱${d.time}分 · 🔥${d.calories}kcal · 难度${'★'.repeat(d.difficulty)}</div>
       <div class="tags">${d.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
       ${pregBadge(d)}
-      <div class="add-row">
-        <button class="mini" data-action="add" data-id="${d.id}" data-slot="breakfast">早</button>
-        <button class="mini" data-action="add" data-id="${d.id}" data-slot="lunch">午</button>
-        <button class="mini" data-action="add" data-id="${d.id}" data-slot="dinner">晚</button>
-        <button class="mini" data-action="add" data-id="${d.id}" data-slot="snack">加</button>
-        ${isUser ? `<button class="mini del" data-action="r-del" data-id="${d.id}">删</button>` : ''}
-      </div></div>`;
+      ${addRow(d)}
+      ${isUser ? `<button class="mini del" data-action="r-del" data-id="${d.id}">删</button>` : ''}</div>`;
   }
   html += `</div><button class="fab" data-action="new-recipe">＋ 新建菜谱</button></div>`;
   return html;
@@ -495,6 +496,14 @@ function addDish(id, slot) { ensureToday(); state.today[slot].push(id); store.se
 function removeDish(id, slot) { ensureToday(); state.today[slot] = state.today[slot].filter((x) => x !== id); store.setToday(state.today); render(); }
 function regen() { ensureToday(); state.today = { date: todayKey(), ...generateDailyPlan(store.getProfile(), todayKey()) }; store.setToday(state.today); render(); }
 
+// 点菜/菜谱库的加菜行：先点 早/午/晚/加餐 选中时段（变色），再点「➕加」加入
+function addRow(d) {
+  const slots = [['breakfast', '早'], ['lunch', '午'], ['dinner', '晚'], ['snack', '加餐']];
+  const sel = state.orderSel[d.id];
+  const btns = slots.map(([s, l]) => `<button class="mini slot ${sel === s ? 'on' : ''}" data-action="sel" data-id="${d.id}" data-slot="${s}">${l}</button>`).join('');
+  return `<div class="add-row">${btns}<button class="mini add-confirm" data-action="add-confirm" data-id="${d.id}">➕ 加</button></div>`;
+}
+
 function startTimer(sec) {
   stopTimer();
   const el = document.getElementById('timer');
@@ -568,6 +577,20 @@ function onClick(e) {
     case 'add': addDish(id, slot); break;
     case 'remove': removeDish(id, slot); break;
     case 'cat': state.orderCat = cat; render(); break;
+    case 'sel': {
+      const cur = state.orderSel[id];
+      if (cur === slot) delete state.orderSel[id]; else state.orderSel[id] = slot;
+      render();
+      break;
+    }
+    case 'add-confirm': {
+      const s = state.orderSel[id];
+      if (!s) { toast('请先点 早/午/晚/加餐 选定时段'); break; }
+      delete state.orderSel[id];
+      addDish(id, s);
+      toast('已加入' + SLOT_LBL[s]);
+      break;
+    }
     case 'r-cat': state.recipeCat = cat; render(); break;
     case 'r-del': if (confirm('删除这道自制菜谱？')) { store.delUserRecipe(id); render(); } break;
     case 'new-recipe': openRecipeModal(); break;
