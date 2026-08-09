@@ -90,10 +90,10 @@ function dishCardInner(d, extraHtml, pregHtml, topRightHtml) {
       </div>
       <div class="dish-meta">⏱${d.time}分 · 🔥${d.calories}kcal · 难度${'★'.repeat(d.difficulty)}</div>
       ${pregHtml ? `<div class="preg-badge-inline">${pregHtml}</div>` : ''}
-      <div class="card-bottom">
+      ${extraHtml ? `<div class="card-bottom">
         <div class="tags">${d.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-        <div class="card-actions">${extraHtml || ''}</div>
-      </div>
+        <div class="card-actions">${extraHtml}</div>
+      </div>` : `<div class="tags">${d.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>`}
     </div>`;
 }
 const goalLabel = (g) => ({ maintain: '保持', lose: '减脂', gain: '增肌' }[g] || '保持');
@@ -214,7 +214,7 @@ function viewRecipes() {
     const hidden = !((state.recipeCat === '全部' || d.category === state.recipeCat) && (!q || hay.includes(q)));
     const topRight = `<span class="badge cat-${catClass(d.category)}">${esc(d.category)}</span><button class="icon-del" data-action="r-del" data-id="${d.id}" title="删除">🗑</button>`;
     html += `<div class="card dish-card recipe-card ${hidden ? 'hide' : ''}" data-hay="${esc(hay)}" data-cat="${esc(d.category)}">
-      ${dishCardInner(d, addRow(d), pregBadge(d), topRight)}
+      ${dishCardInner(d, '', pregBadge(d), topRight)}
     </div>`;
   }
   html += `</div><button class="fab" data-action="new-recipe">＋ 新建菜谱</button></div>`;
