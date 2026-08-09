@@ -88,6 +88,12 @@ h1 { font-size: 22px; margin: 2px 0 4px; }
 .btn { width: 100%; border: none; background: #fff; color: var(--orange-d); border: 1px solid var(--orange); border-radius: 12px; padding: 12px; font-size: 15px; }
 .btn.primary { background: var(--orange); color: #fff; }
 .btn.ghost { background: #fff7f2; }
+
+/* 家庭共享卡片 */
+.sync-actions { display: flex; gap: 8px; margin: 10px 0 4px; flex-wrap: wrap; }
+.sync-actions .btn { flex: 1 1 auto; }
+.sync-status { margin: 6px 0 0; font-size: 12px; color: var(--orange); background: #fff6f0; border-radius: 8px; padding: 6px 10px; word-break: break-all; }
+.sync-status:empty { display: none; }
 .btn:disabled { opacity: .4; }
 .suggest { background: #fff3e9; border-radius: 12px; padding: 10px 12px; margin-top: 12px; font-size: 13px; color: var(--orange-d); }
 

@@ -9,6 +9,7 @@ import { llmSuggestion } from './llm.js';
 import { STEP_ENRICH } from '../data/stepEnrich.js';
 import { stepImage } from './stepArt.js';
 import { extractDouyinUrl, douyinUrlFor } from './douyin.js';
+import { sync } from './sync.js';
 
 const TABS = [
   { key: 'today', label: '今日', icon: '📅' },
@@ -393,6 +394,19 @@ function viewMe() {
       <div class="slot-h">🗂️ 已隐藏菜谱（${delList.length}）</div>
       ${delList.length ? `<div class="chips">${delList.map((d) => `<span class="chip">${esc(d.name)} <b data-action="r-restore" data-id="${d.id}">恢复</b></span>`).join('')}</div>` : '<span class="muted">暂无隐藏菜谱。在「菜谱库」卡片点「删除」可隐藏不用的菜。</span>'}
     </div>
+    <div class="card">
+      <div class="slot-h">👨‍👩‍👧 家庭共享</div>
+      <label class="field chk-inline"><input type="checkbox" id="f-sync-on" ${sync.isEnabled() ? 'checked' : ''}> 启用全家数据共享</label>
+      <label class="field">家庭共享码 <input id="f-household" value="${esc((sync.getCfg().household) || '')}" placeholder="全家约定一个相同的码，如 2026home"></label>
+      <label class="field">LeanCloud App ID <input id="f-lc-id" value="${esc((sync.getCfg().appId) || '')}" placeholder="从 LeanCloud 控制台复制"></label>
+      <label class="field">LeanCloud App Key <input id="f-lc-key" value="${esc((sync.getCfg().appKey) || '')}" placeholder="从 LeanCloud 控制台复制"></label>
+      <div class="sync-actions">
+        <button class="btn primary" data-action="sync-save">保存并连接</button>
+        <button class="btn" data-action="sync-push">立即同步本机</button>
+      </div>
+      <p class="sync-status">${esc(sync.lastStatus || '未连接')}</p>
+      <p class="sub">家人输入同一个「共享码」即可共享今日的菜、自制菜谱与设置。需在 LeanCloud 控制台「设置 - 安全 - Web 安全域名」加入 <b>cbb6620852.github.io</b> 与 <b>localhost</b>。</p>
+    </div>
   </div>`;
   return html;
 }
@@ -553,6 +567,7 @@ function saveRecipe() {
   closeRecipeModal();
   state.tab = 'recipes'; state.search = ''; state.recipeCat = '全部';
   render();
+  sync.scheduleSave();
 }
 
 // ---------------- 交互 ----------------
@@ -567,9 +582,9 @@ function render() {
 
 function setTab(tab) { state.tab = tab; render(); }
 function stopTimer() { if (state.timer) { clearInterval(state.timer); state.timer = null; } }
-function addDish(id, slot) { ensureToday(); state.today[slot].push(id); store.setToday(state.today); render(); }
-function removeDish(id, slot) { ensureToday(); state.today[slot] = state.today[slot].filter((x) => x !== id); store.setToday(state.today); render(); }
-function regen() { ensureToday(); state.today = { date: todayKey(), ...generateDailyPlan(store.getProfile(), todayKey()) }; store.setToday(state.today); render(); }
+function addDish(id, slot) { ensureToday(); state.today[slot].push(id); store.setToday(state.today); render(); sync.scheduleSave(); }
+function removeDish(id, slot) { ensureToday(); state.today[slot] = state.today[slot].filter((x) => x !== id); store.setToday(state.today); render(); sync.scheduleSave(); }
+function regen() { ensureToday(); state.today = { date: todayKey(), ...generateDailyPlan(store.getProfile(), todayKey()) }; store.setToday(state.today); render(); sync.scheduleSave(); }
 
 // 点菜/菜谱库的加菜行：先点 早/午/晚 选中时段（变色），再点「＋」加入
 function addRow(d) {
@@ -612,6 +627,7 @@ function saveProfile() {
   store.setProfile(p);
   state.suggest = '';
   regen();
+  sync.scheduleSave();
 }
 
 function pantryAdd() {
@@ -621,8 +637,9 @@ function pantryAdd() {
   v.split(/[，,]/).map((x) => x.trim()).filter(Boolean).forEach((x) => { if (!arr.includes(x)) arr.push(x); });
   store.setPantry(arr);
   state.tab = 'me'; render();
+  sync.scheduleSave();
 }
-function pantryDel(name) { store.setPantry(store.getPantry().filter((x) => x !== name)); render(); }
+function pantryDel(name) { store.setPantry(store.getPantry().filter((x) => x !== name)); render(); sync.scheduleSave(); }
 
 function saveLlm() {
   store.setLlm({
@@ -675,10 +692,11 @@ function onClick(e) {
         store.deleteRecipe(id);
         cleanupTodayMenu(id);
         render();
+        sync.scheduleSave();
       }
       break;
     }
-    case 'r-restore': store.removeDeletedId(id); render(); break;
+    case 'r-restore': store.removeDeletedId(id); render(); sync.scheduleSave(); break;
     case 'new-recipe': openRecipeModal(); break;
     case 'r-tab': switchRtab(btn.dataset.mode); break;
     case 'r-parse': {
@@ -708,6 +726,36 @@ function onClick(e) {
     case 'pantry-add': pantryAdd(); break;
     case 'pantry-del': pantryDel(name); break;
     case 'llm-suggest': loadSuggest(); break;
+    case 'sync-save': {
+      const enabled = !!(document.getElementById('f-sync-on') && document.getElementById('f-sync-on').checked);
+      const household = (document.getElementById('f-household').value || '').trim();
+      const appId = (document.getElementById('f-lc-id').value || '').trim();
+      const appKey = (document.getElementById('f-lc-key').value || '').trim();
+      if (enabled && (!household || !appId || !appKey)) { toast('启用需填齐 共享码 / App ID / App Key'); break; }
+      sync.setCfg({ enabled, household, appId, appKey });
+      if (enabled) {
+        toast('正在连接…');
+        sync.reconnect().then((r) => {
+          ensureToday();
+          render();
+          const el = document.querySelector('.sync-status'); if (el) el.textContent = sync.lastStatus;
+          toast(r && r.ok ? '已连接并同步' : '已保存，但同步失败：' + sync.lastStatus);
+        });
+      } else {
+        toast('已关闭家庭共享');
+        render();
+      }
+      break;
+    }
+    case 'sync-push': {
+      if (!sync.isEnabled()) { toast('请先启用并连接'); break; }
+      toast('正在同步本机…');
+      sync.saveShared().then((r) => {
+        const el = document.querySelector('.sync-status'); if (el) el.textContent = sync.lastStatus;
+        toast(r && r.ok ? '本机已同步到全家' : '同步失败：' + sync.lastStatus);
+      });
+      break;
+    }
   }
 }
 
@@ -715,5 +763,15 @@ document.addEventListener('click', onClick);
 document.addEventListener('input', (e) => {
   if (e.target && e.target.id === 'r-search') { state.search = e.target.value; filterRecipeList(); }
 });
-ensureToday();
-render();
+
+// 启动：先确保今日数据，若启用家庭共享则拉取全家快照（失败则降级用本机），最后渲染
+async function boot() {
+  ensureToday();
+  if (sync.isEnabled()) {
+    try { await Promise.race([sync.loadShared(), timeout(8000)]); } catch (e) { /* 降级：用本机 */ }
+    state.today = store.getToday();
+  }
+  render();
+}
+function timeout(ms) { return new Promise((_, rej) => setTimeout(() => rej(new Error('sync timeout')), ms)); }
+boot();

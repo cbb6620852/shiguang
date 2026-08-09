@@ -45,6 +45,7 @@ export const store = {
   delUserRecipe(id) { write(KEYS.userRecipes, read(KEYS.userRecipes, []).filter((r) => r.id !== id)); },
   // 已隐藏的系统菜谱（隐藏后从菜谱库/推荐中消失，可在「我的」恢复）
   getDeletedIds() { return read(KEYS.deleted, []); },
+  setDeletedIds(arr) { write(KEYS.deleted, Array.isArray(arr) ? arr : []); },
   addDeletedId(id) { const a = read(KEYS.deleted, []); if (!a.includes(id)) a.push(id); write(KEYS.deleted, a); },
   removeDeletedId(id) { write(KEYS.deleted, read(KEYS.deleted, []).filter((x) => x !== id)); },
   // 统一删除：用户菜(id 以 u 开头)永久删；系统菜隐藏(可恢复)
