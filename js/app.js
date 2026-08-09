@@ -398,7 +398,7 @@ function viewMe() {
       <div class="slot-h">👨‍👩‍👧 家庭共享</div>
       <label class="field chk-inline"><input type="checkbox" id="f-sync-on" ${sync.isEnabled() ? 'checked' : ''}> 启用全家数据共享</label>
       <label class="field">家庭共享码 <input id="f-household" value="${esc((sync.getCfg().household) || '')}" placeholder="全家约定一个相同的码，如 2026home"></label>
-      <label class="field">FC 接口地址 <input id="f-endpoint" value="${esc((sync.getCfg().endpoint) || '')}" placeholder="函数计算触发器网址，如 https://xxx.cn-hangzhou.fcapp.run/sync"></label>
+      <label class="field">FC 接口地址 <input id="f-endpoint" value="${esc((sync.getCfg().endpoint) || '')}" placeholder="函数计算触发器网址，如 https://xxx.cn-hangzhou.fcapp.run"></label>
       <div class="sync-actions">
         <button class="btn primary" data-action="sync-save">保存并连接</button>
         <button class="btn" data-action="sync-push">立即同步本机</button>
