@@ -80,7 +80,7 @@ h1 { font-size: 22px; margin: 2px 0 4px; }
 .cat-tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; }
 .cat-tab { border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 7px 16px; font-size: 14px; white-space: nowrap; }
 .cat-tab.active { background: var(--orange); color: #fff; border-color: var(--orange); }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 .order-grid { grid-template-columns: 1fr; gap: 12px; }
 
 .actions { margin-top: 12px; }
