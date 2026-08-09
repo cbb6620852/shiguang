@@ -141,7 +141,7 @@ h1 { font-size: 22px; margin: 2px 0 4px; }
 /* 我的 */
 .field { display: block; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
 .field input, .field select { width: 100%; margin-top: 4px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; font-size: 15px; color: var(--text); background: #fff; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .chk { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; color: var(--text); }
 .chip { background: #fff0e8; color: var(--orange-d); padding: 5px 10px; border-radius: 14px; font-size: 13px; }
 .chip b { cursor: pointer; }

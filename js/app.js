@@ -365,7 +365,8 @@ function viewMe() {
       <label class="field">健康目标 <select id="f-goal">${goalOpts}</select></label>
       <label class="field">厨艺水平 <span class="muted">${'★'.repeat(p.skill)}</span><input id="f-skill" type="range" min="1" max="3" value="${p.skill}"></label>
       <label class="field">每餐时间(分) <input id="f-time" type="number" min="5" value="${p.timeBudget}"></label>
-      <div class="field">口味偏好 <div class="chips">${tastesHtml}</div></div>
+      <div class="field">口味偏好</div>
+      <div class="chips">${tastesHtml}</div>
       <label class="field">忌口/过敏(逗号分隔) <input id="f-allergies" value="${esc((p.allergies || []).join('，'))}"></label>
       <label class="field">不爱吃(逗号分隔) <input id="f-dislikes" value="${esc((p.dislikes || []).join('，'))}"></label>
       <button class="btn primary" data-action="save-profile">保存画像并刷新今日</button>
