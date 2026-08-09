@@ -35,6 +35,61 @@ function pregBadge(d) {
   const caution = preg.caution ? ` <span class="preg-caution">⚠️ ${esc(preg.caution)}</span>` : '';
   return `<div class="preg-badge">孕期适宜：<span class="preg-dots">${dots}</span>${caution}</div>`;
 }
+
+// 菜品 emoji 缩略图：按菜名关键词推断，无需给 100 道菜逐一配图
+const EMOJI_RULES = [
+  [/[虾]/, '🦐'],
+  [/[蟹]/, '🦀'],
+  [/甲鱼/, '🐢'],
+  [/[鱼鲈鳜鲫鳊鮰黄鱼]/, '🐟'],
+  [/[鸭]/, '🦆'],
+  [/[鸡]/, '🍗'],
+  [/牛肉|牛/, '🥩'],
+  [/排骨/, '🍖'],
+  [/火腿/, '🥓'],
+  [/粥/, '🥣'],
+  [/饺子/, '🥟'],
+  [/小笼包|包子/, '🍘'],
+  [/粽子/, '🍙'],
+  [/葱油饼|饼/, '🫓'],
+  [/年糕/, '🍡'],
+  [/炒饭|饭/, '🍚'],
+  [/面|粉丝/, '🍜'],
+  [/烧肉|扣肉|腊肉|白切肉|千张肉|粉蒸肉|红烧肉|五花肉|肉/, '🥩'],
+  [/豆腐|腐竹|千张|豆干|皮蛋|麻婆/, '🧈'],
+  [/番茄|西红柿/, '🍅'],
+  [/西兰花|花菜|菜花/, '🥦'],
+  [/茄/, '🍆'],
+  [/笋|茭白/, '🎋'],
+  [/藕/, '🪷'],
+  [/土豆|马铃薯/, '🥔'],
+  [/苦瓜/, '🥒'],
+  [/黄瓜/, '🥒'],
+  [/木耳|金针菇|菌|菇/, '🍄'],
+  [/毛豆|四季豆|豆角/, '🫛'],
+  [/海带/, '🌿'],
+  [/莴笋/, '🥬'],
+  [/青菜|菜薹|包菜|生菜|菠菜|茼蒿|空心菜|白菜|菜/, '🥬'],
+  [/豆苗/, '🌿'],
+  [/蛋/, '🥚'],
+];
+function dishEmoji(d) {
+  if (!d) return '🍽️';
+  if (d.category === '汤类') return '🍲';
+  const name = d.name || '';
+  for (const [re, em] of EMOJI_RULES) if (re.test(name)) return em;
+  return ({ 荤菜: '🍖', 蔬菜: '🥬', 凉拌: '🥗', 主食: '🍚', 汤类: '🍲' })[d.category] || '🍽️';
+}
+// 卡片内部：左 emoji 缩略图 + 右文字（点菜 / 菜谱库共用）
+function dishCardInner(d, extraHtml) {
+  return `<div class="thumb cat-${catClass(d.category)}">${dishEmoji(d)}</div>
+    <div class="card-main">
+      <div class="card-h"><span class="dish-name">${esc(d.name)}</span>${videoBadge(d)}<span class="badge cat-${catClass(d.category)}">${esc(d.category)}</span></div>
+      <div class="dish-meta">⏱${d.time}分 · 🔥${d.calories}kcal · 难度${'★'.repeat(d.difficulty)}</div>
+      <div class="tags">${d.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+      ${extraHtml || ''}
+    </div>`;
+}
 const goalLabel = (g) => ({ maintain: '保持', lose: '减脂', gain: '增肌' }[g] || '保持');
 const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
@@ -110,22 +165,18 @@ function viewToday() {
   }
   html += `<div class="actions"><button class="btn primary" data-action="regen">🔄 重新生成今日</button></div>`;
   if (state.suggest) html += `<div class="suggest">💡 ${esc(state.suggest)}</div>`;
-  html += `<p class="hint">想换菜？去"点菜"先点 早/午/晚/加餐 选中时段，再点「➕加」加入，或在上方 ✕ 移除。</p></div>`;
+  html += `<p class="hint">想换菜？去"点菜"先点 早/午/晚 选中时段，再点「＋」加入，或在上方 ✕ 移除。</p></div>`;
   return html;
 }
 
 function viewOrder() {
-  let html = `<div class="page"><h1>点菜</h1><p class="sub">先点 早/午/晚/加餐 选中时段（按钮变色），再点「➕加」加入今日菜单</p><div class="cat-tabs">`;
+  let html = `<div class="page"><h1>点菜</h1><p class="sub">先点 早/午/晚 选中时段（按钮变色），再点「＋」加入今日菜单</p><div class="cat-tabs">`;
   for (const c of CATEGORIES) {
     html += `<button class="cat-tab ${c === state.orderCat ? 'active' : ''}" data-action="cat" data-cat="${esc(c)}">${esc(c)}</button>`;
   }
   html += `</div><div class="grid">`;
   for (const d of allRecipes().filter((r) => r.category === state.orderCat)) {
-    html += `<div class="card">
-      <div class="card-h"><span class="dish-name">${esc(d.name)}</span>${videoBadge(d)}<span class="badge cat-${catClass(d.category)}">${esc(d.category)}</span></div>
-      <div class="dish-meta">⏱${d.time}分 · 🔥${d.calories}kcal · 难度${'★'.repeat(d.difficulty)}</div>
-      <div class="tags">${d.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-      ${addRow(d)}</div>`;
+    html += `<div class="card dish-card">${dishCardInner(d, addRow(d))}</div>`;
   }
   html += `</div></div>`;
   return html;
@@ -154,13 +205,9 @@ function viewRecipes() {
   for (const d of all) {
     const hay = (d.name + ' ' + d.ingredients.map((i) => i.name).join(' ') + ' ' + d.tags.join(' ')).toLowerCase();
     const hidden = !((state.recipeCat === '全部' || d.category === state.recipeCat) && (!q || hay.includes(q)));
-    html += `<div class="card recipe-card ${hidden ? 'hide' : ''}" data-hay="${esc(hay)}" data-cat="${esc(d.category)}">
-      <div class="card-h"><span class="dish-name">${esc(d.name)}</span>${videoBadge(d)}<span class="badge cat-${catClass(d.category)}">${esc(d.category)}</span></div>
-      <div class="dish-meta">⏱${d.time}分 · 🔥${d.calories}kcal · 难度${'★'.repeat(d.difficulty)}</div>
-      <div class="tags">${d.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-      ${pregBadge(d)}
-      ${addRow(d)}
-      <button class="mini del" data-action="r-del" data-id="${d.id}">删除</button></div>`;
+    html += `<div class="card dish-card recipe-card ${hidden ? 'hide' : ''}" data-hay="${esc(hay)}" data-cat="${esc(d.category)}">
+      ${dishCardInner(d, `${pregBadge(d)}${addRow(d)}<button class="mini del" data-action="r-del" data-id="${d.id}">删除</button>`)}
+    </div>`;
   }
   html += `</div><button class="fab" data-action="new-recipe">＋ 新建菜谱</button></div>`;
   return html;
@@ -515,12 +562,12 @@ function addDish(id, slot) { ensureToday(); state.today[slot].push(id); store.se
 function removeDish(id, slot) { ensureToday(); state.today[slot] = state.today[slot].filter((x) => x !== id); store.setToday(state.today); render(); }
 function regen() { ensureToday(); state.today = { date: todayKey(), ...generateDailyPlan(store.getProfile(), todayKey()) }; store.setToday(state.today); render(); }
 
-// 点菜/菜谱库的加菜行：先点 早/午/晚/加餐 选中时段（变色），再点「➕加」加入
+// 点菜/菜谱库的加菜行：先点 早/午/晚 选中时段（变色），再点「＋」加入
 function addRow(d) {
-  const slots = [['breakfast', '早'], ['lunch', '午'], ['dinner', '晚'], ['snack', '加餐']];
+  const slots = [['breakfast', '早'], ['lunch', '午'], ['dinner', '晚']];
   const sel = state.orderSel[d.id];
   const btns = slots.map(([s, l]) => `<button class="mini slot ${sel === s ? 'on' : ''}" data-action="sel" data-id="${d.id}" data-slot="${s}">${l}</button>`).join('');
-  return `<div class="add-row">${btns}<button class="mini add-confirm" data-action="add-confirm" data-id="${d.id}">➕ 加</button></div>`;
+  return `<div class="add-row">${btns}<button class="mini add-confirm" data-action="add-confirm" data-id="${d.id}" title="加入今日菜单">＋</button></div>`;
 }
 
 function startTimer(sec) {
