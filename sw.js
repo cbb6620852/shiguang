@@ -1,5 +1,5 @@
 // 服务工作者：实现离线可用，同时避免旧缓存导致更新不生效
-const CACHE = 'shiguang-v2';
+const CACHE = 'shiguang-v3';
 const ASSETS = [
   './', './index.html', './manifest.json', './css/style.css',
   './js/app.js', './js/store.js', './js/llm.js', './js/planner.js',

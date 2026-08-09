@@ -81,11 +81,13 @@ function dishEmoji(d) {
   return ({ 荤菜: '🍖', 蔬菜: '🥬', 凉拌: '🥗', 主食: '🍚', 汤类: '🍲' })[d.category] || '🍽️';
 }
 // 卡片内部：左 emoji 缩略图 + 右文字（点菜 / 菜谱库共用）
-// 文字区底部改为左右方块：左列标签、右列加菜按钮（方案 A）
-function dishCardInner(d, extraHtml, pregHtml) {
+function dishCardInner(d, extraHtml, pregHtml, topRightHtml) {
   return `<div class="thumb cat-${catClass(d.category)}">${dishEmoji(d)}</div>
     <div class="card-main">
-      <div class="card-h"><span class="dish-name">${esc(d.name)}</span>${videoBadge(d)}<span class="badge cat-${catClass(d.category)}">${esc(d.category)}</span></div>
+      <div class="card-h">
+        <span class="dish-name">${esc(d.name)}</span>${videoBadge(d)}
+        ${topRightHtml ? `<span class="card-h-right">${topRightHtml}</span>` : '<span></span>'}
+      </div>
       <div class="dish-meta">⏱${d.time}分 · 🔥${d.calories}kcal · 难度${'★'.repeat(d.difficulty)}</div>
       ${pregHtml ? `<div class="preg-badge-inline">${pregHtml}</div>` : ''}
       <div class="card-bottom">
@@ -180,7 +182,8 @@ function viewOrder() {
   }
   html += `</div><div class="grid order-grid">`;
   for (const d of allRecipes().filter((r) => r.category === state.orderCat)) {
-    html += `<div class="card dish-card">${dishCardInner(d, addRow(d))}</div>`;
+    const topRight = `<span class="badge cat-${catClass(d.category)}">${esc(d.category)}</span>`;
+    html += `<div class="card dish-card">${dishCardInner(d, addRow(d), '', topRight)}</div>`;
   }
   html += `</div></div>`;
   return html;
@@ -209,8 +212,9 @@ function viewRecipes() {
   for (const d of all) {
     const hay = (d.name + ' ' + d.ingredients.map((i) => i.name).join(' ') + ' ' + d.tags.join(' ')).toLowerCase();
     const hidden = !((state.recipeCat === '全部' || d.category === state.recipeCat) && (!q || hay.includes(q)));
+    const topRight = `<span class="badge cat-${catClass(d.category)}">${esc(d.category)}</span><button class="icon-del" data-action="r-del" data-id="${d.id}" title="删除">🗑</button>`;
     html += `<div class="card dish-card recipe-card ${hidden ? 'hide' : ''}" data-hay="${esc(hay)}" data-cat="${esc(d.category)}">
-      ${dishCardInner(d, `${addRow(d)}<button class="mini del" data-action="r-del" data-id="${d.id}">删除</button>`, pregBadge(d))}
+      ${dishCardInner(d, addRow(d), pregBadge(d), topRight)}
     </div>`;
   }
   html += `</div><button class="fab" data-action="new-recipe">＋ 新建菜谱</button></div>`;

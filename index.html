@@ -18,7 +18,7 @@
     // 自动清理旧版本 Service Worker 与缓存（解决 v1 缓存导致白屏）
     (function () {
       try {
-        const SW_CLEAR_KEY = 'sw-cleared-v2';
+        const SW_CLEAR_KEY = 'sw-cleared-v3';
         const needClear = 'serviceWorker' in navigator && !localStorage.getItem(SW_CLEAR_KEY);
         if (needClear) {
           localStorage.setItem(SW_CLEAR_KEY, '1');
