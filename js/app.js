@@ -81,13 +81,17 @@ function dishEmoji(d) {
   return ({ 荤菜: '🍖', 蔬菜: '🥬', 凉拌: '🥗', 主食: '🍚', 汤类: '🍲' })[d.category] || '🍽️';
 }
 // 卡片内部：左 emoji 缩略图 + 右文字（点菜 / 菜谱库共用）
-function dishCardInner(d, extraHtml) {
+// 文字区底部改为左右方块：左列标签、右列加菜按钮（方案 A）
+function dishCardInner(d, extraHtml, pregHtml) {
   return `<div class="thumb cat-${catClass(d.category)}">${dishEmoji(d)}</div>
     <div class="card-main">
       <div class="card-h"><span class="dish-name">${esc(d.name)}</span>${videoBadge(d)}<span class="badge cat-${catClass(d.category)}">${esc(d.category)}</span></div>
       <div class="dish-meta">⏱${d.time}分 · 🔥${d.calories}kcal · 难度${'★'.repeat(d.difficulty)}</div>
-      <div class="tags">${d.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-      ${extraHtml || ''}
+      ${pregHtml ? `<div class="preg-badge-inline">${pregHtml}</div>` : ''}
+      <div class="card-bottom">
+        <div class="tags">${d.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+        <div class="card-actions">${extraHtml || ''}</div>
+      </div>
     </div>`;
 }
 const goalLabel = (g) => ({ maintain: '保持', lose: '减脂', gain: '增肌' }[g] || '保持');
@@ -206,7 +210,7 @@ function viewRecipes() {
     const hay = (d.name + ' ' + d.ingredients.map((i) => i.name).join(' ') + ' ' + d.tags.join(' ')).toLowerCase();
     const hidden = !((state.recipeCat === '全部' || d.category === state.recipeCat) && (!q || hay.includes(q)));
     html += `<div class="card dish-card recipe-card ${hidden ? 'hide' : ''}" data-hay="${esc(hay)}" data-cat="${esc(d.category)}">
-      ${dishCardInner(d, `${pregBadge(d)}${addRow(d)}<button class="mini del" data-action="r-del" data-id="${d.id}">删除</button>`)}
+      ${dishCardInner(d, `${addRow(d)}<button class="mini del" data-action="r-del" data-id="${d.id}">删除</button>`, pregBadge(d))}
     </div>`;
   }
   html += `</div><button class="fab" data-action="new-recipe">＋ 新建菜谱</button></div>`;
