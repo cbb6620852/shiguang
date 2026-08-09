@@ -178,7 +178,7 @@ function viewOrder() {
   for (const c of CATEGORIES) {
     html += `<button class="cat-tab ${c === state.orderCat ? 'active' : ''}" data-action="cat" data-cat="${esc(c)}">${esc(c)}</button>`;
   }
-  html += `</div><div class="grid">`;
+  html += `</div><div class="grid order-grid">`;
   for (const d of allRecipes().filter((r) => r.category === state.orderCat)) {
     html += `<div class="card dish-card">${dishCardInner(d, addRow(d))}</div>`;
   }
