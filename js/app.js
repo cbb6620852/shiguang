@@ -398,14 +398,13 @@ function viewMe() {
       <div class="slot-h">👨‍👩‍👧 家庭共享</div>
       <label class="field chk-inline"><input type="checkbox" id="f-sync-on" ${sync.isEnabled() ? 'checked' : ''}> 启用全家数据共享</label>
       <label class="field">家庭共享码 <input id="f-household" value="${esc((sync.getCfg().household) || '')}" placeholder="全家约定一个相同的码，如 2026home"></label>
-      <label class="field">LeanCloud App ID <input id="f-lc-id" value="${esc((sync.getCfg().appId) || '')}" placeholder="从 LeanCloud 控制台复制"></label>
-      <label class="field">LeanCloud App Key <input id="f-lc-key" value="${esc((sync.getCfg().appKey) || '')}" placeholder="从 LeanCloud 控制台复制"></label>
+      <label class="field">FC 接口地址 <input id="f-endpoint" value="${esc((sync.getCfg().endpoint) || '')}" placeholder="函数计算触发器网址，如 https://xxx.cn-hangzhou.fcapp.run/sync"></label>
       <div class="sync-actions">
         <button class="btn primary" data-action="sync-save">保存并连接</button>
         <button class="btn" data-action="sync-push">立即同步本机</button>
       </div>
       <p class="sync-status">${esc(sync.lastStatus || '未连接')}</p>
-      <p class="sub">家人输入同一个「共享码」即可共享今日的菜、自制菜谱与设置。需在 LeanCloud 控制台「设置 - 安全 - Web 安全域名」加入 <b>cbb6620852.github.io</b> 与 <b>localhost</b>。</p>
+      <p class="sub">家人输入同一个「共享码」即可共享今日的菜、自制菜谱与设置。共享码尽量复杂些（别用 123456）。FC 函数需开启「允许匿名访问」并把跨域域名加入 <b>cbb6620852.github.io</b> / <b>localhost</b>。部署步骤见「部署-阿里云.md」。</p>
     </div>
   </div>`;
   return html;
@@ -729,10 +728,9 @@ function onClick(e) {
     case 'sync-save': {
       const enabled = !!(document.getElementById('f-sync-on') && document.getElementById('f-sync-on').checked);
       const household = (document.getElementById('f-household').value || '').trim();
-      const appId = (document.getElementById('f-lc-id').value || '').trim();
-      const appKey = (document.getElementById('f-lc-key').value || '').trim();
-      if (enabled && (!household || !appId || !appKey)) { toast('启用需填齐 共享码 / App ID / App Key'); break; }
-      sync.setCfg({ enabled, household, appId, appKey });
+      const endpoint = (document.getElementById('f-endpoint').value || '').trim();
+      if (enabled && (!household || !endpoint)) { toast('启用需填齐 共享码 / FC 接口地址'); break; }
+      sync.setCfg({ enabled, household, endpoint });
       if (enabled) {
         toast('正在连接…');
         sync.reconnect().then((r) => {
