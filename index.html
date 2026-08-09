@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#ff6b35" />
+  <title>食光小厨</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icon.svg" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <nav id="nav"></nav>
+  <script type="module" src="js/app.js"></script>
+  <script>
+    // 自动清理旧版本 Service Worker 与缓存（解决 v1 缓存导致白屏）
+    (function () {
+      try {
+        const SW_CLEAR_KEY = 'sw-cleared-v2';
+        const needClear = 'serviceWorker' in navigator && !localStorage.getItem(SW_CLEAR_KEY);
+        if (needClear) {
+          localStorage.setItem(SW_CLEAR_KEY, '1');
+          Promise.all([
+            navigator.serviceWorker.getRegistrations().then((regs) => Promise.all(regs.map((r) => r.unregister()))),
+            window.caches ? caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))) : Promise.resolve()
+          ]).then(() => {
+            // 强制从服务器重新加载，绕过浏览器 HTTP 缓存
+            window.location.href = window.location.origin + window.location.pathname + '?_=' + Date.now();
+          });
+          return;
+        }
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+          });
+        }
+      } catch (e) { /* 如果 localStorage 不可用，直接继续 */ }
+    })();
+  </script>
+</body>
+</html>

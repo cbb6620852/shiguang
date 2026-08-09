@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="42" fill="#ff6b35"/>
+  <g fill="#fff">
+    <!-- 碗 -->
+    <path d="M44 104 h104 a52 52 0 0 1 -104 0 z"/>
+    <!-- 蒸汽 -->
+    <path d="M78 70 q-8 -10 0 -20 q8 -10 0 -20" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M114 70 q-8 -10 0 -20 q8 -10 0 -20" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <!-- 筷子 -->
+    <rect x="120" y="40" width="7" height="70" rx="3" transform="rotate(20 123 75)"/>
+    <rect x="136" y="40" width="7" height="70" rx="3" transform="rotate(20 139 75)"/>
+  </g>
+</svg>

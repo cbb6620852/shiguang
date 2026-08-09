@@ -1,0 +1,12 @@
+{
+  "name": "食光小厨",
+  "short_name": "食光小厨",
+  "description": "定制每日食谱、指导做菜流程的家庭小厨",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff7f2",
+  "theme_color": "#ff6b35",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
